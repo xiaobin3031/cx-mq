@@ -65,7 +65,7 @@ uint64_t generate_id();
 // 产生消息
 uint64_t produce(MessageQueue *queue, const char* topic, const char* group, const char* data, size_t len);
 // 消费消息
-void consume(MessageQueue* queue, SocketQueue* socket_queue);
+int consume(MessageQueue* queue, SocketQueue* socket_queue);
 
 void close_producer();
 void close_consumer();

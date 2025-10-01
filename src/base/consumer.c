@@ -10,6 +10,18 @@ static int client_match(Client* client, Message* msg) {
     return strcmp(client->topic, msg->topic) == 0 && strcmp(client->group, msg->group) == 0;
 }
 
+static int find_valid_client(SocketQueue* socket_queue, Message* msg) {
+    if(socket_queue && socket_queue->size > 0) {
+        for(size_t i = 0; i < socket_queue->size; i++) {
+            Client* client = socket_queue->clients[i];
+            if(client_match(client, msg)) {
+                return client->fd;
+            }
+        }
+    }
+    return QUEUE_EMPTY;
+}
+
 static int send(int fd, Message* msg) {
     size_t head_offset = 0, body_offset = 0;
     size_t head_len = sizeof(uint16_t) + head_count * sizeof(uint32_t);
@@ -30,7 +42,7 @@ static int send(int fd, Message* msg) {
     return (sent == total_len) ? 0 : -1; // Return 0 on success
 }
 
-uint64_t consume(MessageQueue* queue, SocketQueue* socket_queue) {
+int consume(MessageQueue* queue, SocketQueue* socket_queue) {
     if(closed) return CLOSED;
     if(!queue) return QUEUE_EMPTY;
 
@@ -45,11 +57,16 @@ uint64_t consume(MessageQueue* queue, SocketQueue* socket_queue) {
                msg->id, msg->topic, msg->group, (int)msg->len, msg->data);
 
         // 发送消息给所有连接的客户端
-        for (size_t i = 0; i < socket_queue->size; i++) {
-            Client* client = socket_queue->clients[i];
-            if (client_match(client, msg)) {
-                send(client->fd, msg);
+        // todo 找到一个可用的客户端连接
+        int fd = find_valid_client(socket_queue, msg);
+        if (fd > 0) {
+            if (send(fd, msg) == 0) {
+                printf("Message ID %lu sent to client FD %d\n", msg->id, fd);
+            } else {
+                printf("Failed to send Message ID %lu to client FD %d\n", msg->id, fd);
             }
+        } else {
+            printf("No valid client found for Message ID %lu\n", msg->id);
         }
 
         // 释放消息内存
@@ -60,4 +77,12 @@ uint64_t consume(MessageQueue* queue, SocketQueue* socket_queue) {
     }
 
     pthread_mutex_unlock(&queue->mutex);
+
+    return 0;
+}
+
+void close_consumer() {
+    if(closed) return;
+
+    closed = 1;
 }

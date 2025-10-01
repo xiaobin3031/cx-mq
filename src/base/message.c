@@ -1,6 +1,8 @@
 #include "message.h"
 #include <stdlib.h>
 
+static int closed = 0;
+
 MessageQueue* create_message_queue() {
     MessageQueue* queue = (MessageQueue*)malloc(sizeof(MessageQueue));
     if (!queue) return NULL;
@@ -60,4 +62,11 @@ Message* get_message_by_id(MessageQueue* queue, uint64_t id) {
         }
     }
     return NULL;
+}
+
+
+void close_message() {
+    if(closed) return;
+
+    closed = 1;
 }
