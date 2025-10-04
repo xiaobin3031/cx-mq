@@ -31,10 +31,12 @@ typedef struct {
     size_t pos;
 
     pthread_mutex_t mutex;
+    pthread_t tid;
 } MessageQueue;
 
 typedef struct {
     int fd;
+    pthread_t tid;
 
     char* topic;
     char* group;
@@ -55,7 +57,7 @@ int enqueue_message(MessageQueue* queue, Message* msg);
 Message* dequeue_message(MessageQueue* queue);
 Message* get_message_by_id(MessageQueue* queue, uint64_t id);
 
-SocketQueue* start_message_service();
+int start_message_service();
 void destroy_socket_queue(SocketQueue* socket_queue);
 
 // 产生id
@@ -66,6 +68,7 @@ uint64_t generate_id();
 uint64_t produce(MessageQueue *queue, const char* topic, const char* group, const char* data, size_t len);
 // 消费消息
 int consume(MessageQueue* queue, SocketQueue* socket_queue);
+int start_consumer(MessageQueue* queue, SocketQueue* socket_queue);
 
 void close_producer();
 void close_consumer();

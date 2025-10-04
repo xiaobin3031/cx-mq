@@ -23,11 +23,6 @@ static int find_valid_client(SocketQueue* socket_queue, Message* msg) {
 }
 
 static int send(int fd, Message* msg) {
-    size_t head_offset = 0, body_offset = 0;
-    size_t head_len = sizeof(uint16_t) + head_count * sizeof(uint32_t);
-
-
-
     // 这里简单示例，实际应用中应处理发送失败等情况
     size_t total_len = sizeof(msg->id) + sizeof(msg->len) + msg->len;
     char* buffer = (char*)malloc(total_len);
@@ -45,9 +40,6 @@ static int send(int fd, Message* msg) {
 int consume(MessageQueue* queue, SocketQueue* socket_queue) {
     if(closed) return CLOSED;
     if(!queue) return QUEUE_EMPTY;
-
-    // 根据queue->id，加一个消费锁
-    pthread_mutex_lock(&queue->mutex);
 
     Message* msg;
     while ((msg = dequeue_message(queue)) != NULL) {
@@ -77,6 +69,29 @@ int consume(MessageQueue* queue, SocketQueue* socket_queue) {
     }
 
     pthread_mutex_unlock(&queue->mutex);
+    queue->tid = 0;
+
+    return 0;
+}
+
+int start_consumer(MessageQueue* queue, SocketQueue* socket_queue) {
+    if (closed) return CLOSED;
+    if (!queue || !socket_queue) return QUEUE_EMPTY;
+
+    if(queue->tid != 0) {
+        // 已经启动过了
+        return 0;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+    if(queue->tid != 0) {
+        // 已经启动过了
+        return 0;
+    }
+    if (pthread_create(&queue->tid, NULL, (void* (*)(void*))consume, (void*)queue) != 0) {
+        return -1; // Thread creation failed
+    }
+    pthread_detach(queue->tid); // Detach the thread to avoid memory leaks
 
     return 0;
 }

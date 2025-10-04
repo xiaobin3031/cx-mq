@@ -3,6 +3,11 @@
 
 static int closed = 0;
 
+/**
+ * @brief Create a message queue object
+ * 
+ * @return MessageQueue* 
+ */
 MessageQueue* create_message_queue() {
     MessageQueue* queue = (MessageQueue*)malloc(sizeof(MessageQueue));
     if (!queue) return NULL;
@@ -16,6 +21,11 @@ MessageQueue* create_message_queue() {
     return queue;
 }
 
+/**
+ * @brief Destroy a message queue object
+ * 
+ * @param queue 
+ */
 void destroy_message_queue(MessageQueue* queue) {
     if (!queue) return;
 
@@ -29,6 +39,13 @@ void destroy_message_queue(MessageQueue* queue) {
     free(queue);
 }
 
+/**
+ * @brief Enqueue a message to the queue
+ * 
+ * @param queue 
+ * @param msg 
+ * @return int 
+ */
 int enqueue_message(MessageQueue* queue, Message* msg) {
     if (queue->size >= queue->capacity) {
         size_t new_capacity = (queue->capacity == 0) ? 10 : queue->capacity * 2;
@@ -40,9 +57,16 @@ int enqueue_message(MessageQueue* queue, Message* msg) {
     }
 
     queue->msgs[queue->size++] = msg;
+    printf("Message enqueued: ID=%lu, Topic=%s, Group=%s, total messages: %zu\n", msg->id, msg->topic, msg->group, queue->size);
     return 0;
 }
 
+/**
+ * @brief Dequeue a message from the queue
+ * 
+ * @param queue 
+ * @return Message* 
+ */
 Message* dequeue_message(MessageQueue* queue) {
     if (!queue || queue->size == 0 || queue->pos >= queue->size) return NULL;
 
@@ -53,6 +77,13 @@ Message* dequeue_message(MessageQueue* queue) {
     return msg;
 }
 
+/**
+ * @brief Get the message by id object
+ * 
+ * @param queue 
+ * @param id 
+ * @return Message* 
+ */
 Message* get_message_by_id(MessageQueue* queue, uint64_t id) {
     if (!queue) return NULL;
 
@@ -64,7 +95,10 @@ Message* get_message_by_id(MessageQueue* queue, uint64_t id) {
     return NULL;
 }
 
-
+/**
+ * @brief 
+ * 
+ */
 void close_message() {
     if(closed) return;
 
