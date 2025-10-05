@@ -73,6 +73,9 @@ int main() {
         }
         // 在buffer前加上长度信息，用uint64_t表示
         uint64_t data_len = len;
+        // 用网络字节序发送长度
+        data_len = htobe64(data_len);
+        // 发送长度
         if (send(sockfd, &data_len, sizeof(data_len), 0) < 0) {
             perror("Send data length failed");
             break;

@@ -95,6 +95,15 @@ Message* get_message_by_id(MessageQueue* queue, uint64_t id) {
     return NULL;
 }
 
+void print_message(Message* msg) {
+    if (!msg) {
+        printf("Message is NULL\n");
+        return;
+    }
+    printf("Message ID: %lu, Topic: %s, Group: %s, Timestamp: %ld, Data: %.*s\n",
+           msg->id, msg->topic, msg->group, msg->timestamp, (int)msg->len, msg->data);
+}
+
 /**
  * @brief 
  * 

@@ -23,6 +23,7 @@ static int find_valid_client(SocketQueue* socket_queue, Message* msg) {
 }
 
 static int send(int fd, Message* msg) {
+    print_message(msg);
     // 这里简单示例，实际应用中应处理发送失败等情况
     size_t total_len = sizeof(msg->id) + sizeof(msg->len) + msg->len;
     char* buffer = (char*)malloc(total_len);
@@ -49,9 +50,10 @@ int consume(MessageQueue* queue, SocketQueue* socket_queue) {
                msg->id, msg->topic, msg->group, (int)msg->len, msg->data);
 
         // 发送消息给所有连接的客户端
-        // todo 找到一个可用的客户端连接
+        // 找到一个可用的客户端连接
         int fd = find_valid_client(socket_queue, msg);
         if (fd > 0) {
+            // 发送消息
             if (send(fd, msg) == 0) {
                 printf("Message ID %lu sent to client FD %d\n", msg->id, fd);
             } else {

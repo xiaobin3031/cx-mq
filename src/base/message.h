@@ -56,6 +56,7 @@ void destroy_message_queue(MessageQueue* queue);
 int enqueue_message(MessageQueue* queue, Message* msg);
 Message* dequeue_message(MessageQueue* queue);
 Message* get_message_by_id(MessageQueue* queue, uint64_t id);
+void print_message(Message* msg);
 
 int start_message_service();
 void destroy_socket_queue(SocketQueue* socket_queue);

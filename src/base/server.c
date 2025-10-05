@@ -62,20 +62,19 @@ static void* client_produce_thread(void* arg) {
         uint64_t data_len;
         printf("Waiting for message from producer FD %d...\n", client->fd);
         ssize_t len_read = read(client->fd, &data_len, sizeof(data_len));
+        // 读取的长度是网络字节序，转换成真正的长度
+        data_len = be64toh(data_len);
         if (len_read != sizeof(data_len) || data_len == 0 || data_len > 1024*1024) { // 限制最大1MB
-            destroy_client(client);
-            continue;
+            break;
         }
         char* data_buffer = (char*)malloc(data_len);
         if (!data_buffer) {
-            destroy_client(client);
-            continue;
+            break;
         }
         ssize_t data_read = read(client->fd, data_buffer, data_len);
         if (data_read != data_len) {
             free(data_buffer);
-            destroy_client(client);
-            continue;
+            break;
         }
         printf("Received message from producer FD %d: Topic=%s, Group=%s, Data: %.*s\n", client->fd, client->topic, client->group, (int)data_len, data_buffer);
         uint64_t mq_id = produce(messageQueue, client->topic, client->group, data_buffer, data_len);
@@ -175,6 +174,7 @@ static void* client_accept_thread(void* arg) {
             printf("Registering new consumer: FD=%d, Topic=%s, Group=%s\n", client->fd, client->topic, client->group);
             enqueue_socket_client(socketQueue, client);
             printf("Consumer registered: FD=%d, Topic=%s, Group=%s, total consumers: %zu\n", client->fd, client->topic, client->group, socketQueue->size);
+            start_consumer(messageQueue, socketQueue); // 启动消费者线程
         } else {
             // producer
             // 重新读取长度, 不从buffer中读取，防止长度不够
