@@ -9,6 +9,7 @@ static uint8_t closed = 0;
 static uint16_t head_count = 4; // 头部字段数量
 
 static int client_match(Client* client, Message* msg) {
+    printf("Matching client: %s <-> %s | %s <-> %s", client->topic, msg->topic, client->group, msg->group);
     return strcmp(client->topic, msg->topic) == 0 && strcmp(client->group, msg->group) == 0;
 }
 
@@ -35,17 +36,20 @@ static int send(int fd, Message* msg) {
     memcpy(buffer + sizeof(msg->id), &msg->len, sizeof(msg->len));
     memcpy(buffer + sizeof(msg->id) + sizeof(msg->len), msg->data, msg->len);
 
+    // todo 需要先写长度
+
     ssize_t sent = write(fd, buffer, total_len);
     free(buffer);
     return (sent == total_len) ? 0 : -1; // Return 0 on success
 }
 
-int consume(MessageQueue* queue, SocketQueue* socket_queue) {
+static int consume(void* arg) {
+    ConsumeArgs* args = (ConsumeArgs*)arg;
     if(closed) return CLOSED;
-    if(!queue) return QUEUE_EMPTY;
+    if(!args->queue) return QUEUE_EMPTY;
 
     Message* msg;
-    while ((msg = dequeue_message(queue)) != NULL) {
+    while ((msg = dequeue_message(args->queue)) != NULL) {
         // 处理消息
         // 这里简单打印消息内容，实际应用中应有更复杂的处理逻辑
         printf("Consumed Message ID: %lu, Topic: %s, Group: %s, Data: %.*s\n",
@@ -53,7 +57,7 @@ int consume(MessageQueue* queue, SocketQueue* socket_queue) {
 
         // 发送消息给所有连接的客户端
         // 找到一个可用的客户端连接
-        int fd = find_valid_client(socket_queue, msg);
+        int fd = find_valid_client(args->socket_queue, msg);
         if (fd > 0) {
             // 发送消息
             if (send(fd, msg) == 0) {
@@ -71,9 +75,10 @@ int consume(MessageQueue* queue, SocketQueue* socket_queue) {
         free(msg->group);
         free(msg);
     }
+    pthread_mutex_unlock(&args->queue->mutex);
+    args->queue->tid = 0;
 
-    pthread_mutex_unlock(&queue->mutex);
-    queue->tid = 0;
+    free(args);
 
     return 0;
 }
@@ -92,7 +97,10 @@ int start_consumer(MessageQueue* queue, SocketQueue* socket_queue) {
         // 已经启动过了
         return 0;
     }
-    if (pthread_create(&queue->tid, NULL, (void* (*)(void*))consume, (void*)queue) != 0) {
+    ConsumeArgs *args = (ConsumeArgs*)malloc(sizeof(ConsumeArgs));
+    args->queue = queue;
+    args->socket_queue = socket_queue;
+    if (pthread_create(&queue->tid, NULL, (void* (*)(void*))consume, (void*)args) != 0) {
         return -1; // Thread creation failed
     }
     pthread_detach(queue->tid); // Detach the thread to avoid memory leaks

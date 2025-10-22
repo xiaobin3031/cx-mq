@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifdef __APPLE__
+#include <arpa/inet.h>
+#define htobe64 htonll
+#endif
 
 static int port = 12345;
 
@@ -68,6 +74,8 @@ int main() {
             buffer[len - 1] = '\0';
             len--;
         }
+        if(len == 0) continue;
+
         if (strcmp(buffer, "exit") == 0) {
             break; // Exit command
         }
@@ -75,6 +83,7 @@ int main() {
         uint64_t data_len = len;
         // 用网络字节序发送长度
         data_len = htobe64(data_len);
+        printf("Sending message length: %lu\n", len);
         // 发送长度
         if (send(sockfd, &data_len, sizeof(data_len), 0) < 0) {
             perror("Send data length failed");

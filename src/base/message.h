@@ -51,6 +51,11 @@ typedef struct {
     pthread_t tid;
 } SocketQueue;
 
+typedef struct {
+    MessageQueue *queue;
+    SocketQueue* socket_queue;
+} ConsumeArgs;
+
 MessageQueue* create_message_queue();
 void destroy_message_queue(MessageQueue* queue);
 int enqueue_message(MessageQueue* queue, Message* msg);
@@ -67,10 +72,10 @@ uint64_t generate_id();
 
 // 产生消息
 uint64_t produce(MessageQueue *queue, const char* topic, const char* group, const char* data, size_t len);
-// 消费消息
-int consume(MessageQueue* queue, SocketQueue* socket_queue);
 int start_consumer(MessageQueue* queue, SocketQueue* socket_queue);
 
 void close_producer();
 void close_consumer();
 void close_message();
+
+char* get_result_info(int result);

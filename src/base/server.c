@@ -4,6 +4,14 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifdef __APPLE__
+#include <arpa/inet.h>
+#define be64toh ntohll
+#else
+#include <endian.h>
+#endif
 
 static uint8_t closed = 0;
 static SocketQueue* socketQueue = NULL;
@@ -65,6 +73,7 @@ static void* client_produce_thread(void* arg) {
         ssize_t len_read = read(client->fd, &data_len, sizeof(data_len));
         // 读取的长度是网络字节序，转换成真正的长度
         data_len = be64toh(data_len);
+        printf("Received message length: %lu <-> %lu\n", data_len, len_read);
         if (len_read != sizeof(data_len) || data_len == 0 || data_len > 1024*1024) { // 限制最大1MB
             break;
         }
@@ -85,11 +94,12 @@ static void* client_produce_thread(void* arg) {
         send(client->fd, id_buffer, id_len, 0);
         printf("Message produced with ID %lu\n", mq_id);
         free(data_buffer);
-        start_consumer(messageQueue, socketQueue); // 启动消费者线程
+        int result = start_consumer(messageQueue, socketQueue); // 启动消费者线程
+        printf("start consumer result: %d(%s)\n", result, get_result_info(result));
     }
     // 生产者连接后直接关闭
-    destroy_client(client);
     printf("Producer connected and disconnected: FD=%d\n", client->fd);
+    destroy_client(client);
     return NULL;
 }
 

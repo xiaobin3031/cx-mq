@@ -114,3 +114,21 @@ void close_message() {
 
     closed = 1;
 }
+
+char* get_result_info(int result) {
+    switch(result) {
+        case 0:
+            return "Success";
+        case -1:
+            return "Failed";
+        case CLOSED:
+            return "Message service closed";
+        case QUEUE_EMPTY:
+            return "Message queue is empty";
+        case ARG_EMPTY:
+            return "Argument is empty";
+        default:
+            return "Unknown error";
+
+    }
+}
