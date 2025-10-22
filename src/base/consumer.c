@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
 
 static uint8_t closed = 0;
 static uint16_t head_count = 4; // 头部字段数量

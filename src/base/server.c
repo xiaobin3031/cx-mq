@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <stdio.h>
 
 static uint8_t closed = 0;
 static SocketQueue* socketQueue = NULL;

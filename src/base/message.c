@@ -1,5 +1,6 @@
 #include "message.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 static int closed = 0;
 
