@@ -3,9 +3,9 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #ifdef __APPLE__
-#include <arpa/inet.h>
 #define be64toh ntohll
 #define htobe64 htonll
 #endif

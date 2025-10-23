@@ -4,6 +4,11 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <arpa/inet.h>
+
+#ifdef __APPLE__
+#define htobe64 htonll
+#endif
 
 static uint8_t closed = 0;
 static uint16_t head_count = 4; // 头部字段数量
@@ -25,22 +30,17 @@ static int find_valid_client(SocketQueue* socket_queue, Message* msg) {
     return QUEUE_EMPTY;
 }
 
-static int send(int fd, Message* msg) {
+static int send_to_client(int fd, Message* msg) {
     print_message(msg);
-    // 这里简单示例，实际应用中应处理发送失败等情况
-    size_t total_len = sizeof(msg->id) + sizeof(msg->len) + msg->len;
-    char* buffer = (char*)malloc(total_len);
-    if (!buffer) return -1; // Memory allocation failed
 
-    memcpy(buffer, &msg->id, sizeof(msg->id));
-    memcpy(buffer + sizeof(msg->id), &msg->len, sizeof(msg->len));
-    memcpy(buffer + sizeof(msg->id) + sizeof(msg->len), msg->data, msg->len);
+    uint64_t data_len = htobe64(msg->len);
+    if(send(fd, &data_len, sizeof(data_len), 0) < 0) {
+        printf("Send message length: %lu, error", msg->len);
+        return -1;
+    }
 
-    // todo 需要先写长度
-
-    ssize_t sent = write(fd, buffer, total_len);
-    free(buffer);
-    return (sent == total_len) ? 0 : -1; // Return 0 on success
+    ssize_t sent = send(fd, msg->data, msg->len, 0);
+    return (sent == msg->len) ? 0 : -1; // Return 0 on success
 }
 
 static int consume(void* arg) {
@@ -60,7 +60,7 @@ static int consume(void* arg) {
         int fd = find_valid_client(args->socket_queue, msg);
         if (fd > 0) {
             // 发送消息
-            if (send(fd, msg) == 0) {
+            if (send_to_client(fd, msg) == 0) {
                 printf("Message ID %lu sent to client FD %d\n", msg->id, fd);
             } else {
                 printf("Failed to send Message ID %lu to client FD %d\n", msg->id, fd);
