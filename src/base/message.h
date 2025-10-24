@@ -8,6 +8,46 @@
 #define ARG_EMPTY -1002
 #define QUEUE_EMPTY -1003
 
+typedef enum {
+    PRODUCE     = 0x0001,       // 注册为生产者 Client -> Server
+    CONSUME     = 0x0002,       // 注册为消费者 Client -> Server
+    ACK         = 0x0003,       // ACK 消费成功  Client -> Server
+    NACK        = 0x0004,       // NACK消费失败  Client -> Server
+    MESSAGE     = 0x0005,       // 消息     Server -> Client
+    HEARTBEAT   = 0x00FF,     // 心跳
+} MessageType;
+
+typedef enum {
+    GROUP       = 0x01,
+    TOPIC       = 0x02,
+    MESSAGE_ID  = 0x03,
+    DELAY_LEVEL = 0x04,
+
+
+    PAYLOAD     = 0xFF,
+} PayloadType;
+
+typedef struct {
+    uint16_t version;
+    uint16_t type;          // 消息类型
+    uint32_t seq_id;
+    uint32_t payload_len;
+    uint32_t reserved;
+} MsgHeader;
+
+typedef struct {
+    MsgHeader header;
+    char* payload;
+} MsgBody;
+
+typedef struct {
+    char* group;
+    char* topic;
+
+    uint8_t delay_level;
+    char* message;
+} Payload;
+
 typedef struct {
     uint64_t id;
 

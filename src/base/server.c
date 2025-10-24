@@ -143,6 +143,17 @@ static void* client_accept_thread(void* arg) {
             continue;
         }
         client->fd = client_fd;
+        MsgHeader *header = malloc(sizeof(MsgHeader));
+        ssize_t bytes_read = read(client_fd, header, sizeof(MsgHeader));
+        if(bytes_read != sizeof(MsgHeader)) {
+            destroy_client(client);
+            continue;
+        }
+        // 读取二进制内容
+
+
+        Payload *payload = malloc(sizeof(Payload));
+
 
         // 读取输入流，获取topic和group，第一位标记是produer还是consumer
         // 这里简单示例，实际应用中应处理读取失败等情况
