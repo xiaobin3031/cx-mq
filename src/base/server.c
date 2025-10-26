@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef __APPLE__
 #include <arpa/inet.h>
@@ -101,6 +102,26 @@ static void* client_produce_thread(void* arg) {
     printf("Producer connected and disconnected: FD=%d\n", client->fd);
     destroy_client(client);
     return NULL;
+}
+
+static void * client_accept(void *arg) {
+    Client *client = (Client*)arg;
+    MsgBody *body = malloc(sizeof(MsgBody));
+    ssize_t readed = read(client->fd, body->header, sizeof(MsgHeader));
+    if(readed != sizeof(MsgHeader)) {
+        destroy_client(client);
+        return NULL;
+    }
+
+    if(body->header->msg_len > 0) {
+        body->message = malloc(body->header->msg_len + 1);
+        readed = read(client->fd, body->message, body->header->msg_len);
+        if(readed != body->header->msg_len) {
+            destroy_client(client);
+            return NULL;
+        }
+    }
+
 }
 
 static void* client_accept_thread(void* arg) {
